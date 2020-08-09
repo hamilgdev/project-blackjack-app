@@ -1,0 +1,27 @@
+body {
+  color: aliceblue;
+  background-color: #2f4f30 !important;
+}
+
+.header-title {
+  text-align: center;
+  background-color: black;
+  color: aliceblue;
+  padding: 25px;
+}
+
+.point-user {
+  color: aliceblue;
+}
+
+.letter {
+  display: inline-block;
+  position: relative;
+  width: 150px;
+  left: 100px;
+  margin-left: -75px;
+}
+
+.content-letters {
+  min-height: 250px;
+}
