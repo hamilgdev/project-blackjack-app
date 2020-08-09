@@ -4,44 +4,55 @@
  * 2H = Two of Hearts (Corazones)
  * 2S = Two of Spades (Espadas)
  */
-(() => {
+const startGame = (() => {
   "use strict";
 
   let deck = [];
-  const types = ["C", "D", "H", "S"];
-  const specials = ["A", "J", "Q", "K"];
+  const types = ["C", "D", "H", "S"],
+    specials = ["A", "J", "Q", "K"];
 
-  let pointPlayer = 0;
-  let pointCPU = 0;
+  // let pointPlayer = 0,
+  //   pointCPU = 0;
+
+  let pointPlayers = [];
 
   // Referencias HTML
-  const btnGetLetter = document.querySelector("#btn-get-letter");
-  const btnStopGame = document.querySelector("#btn-stop-game");
-  const btnNewGame = document.querySelector("#btn-new-game");
-  const pointCounter = document.querySelectorAll("small");
-  const contentLetter = document.querySelectorAll("#content-letters");
+  const btnGetLetter = document.querySelector("#btn-get-letter"),
+    btnStopGame = document.querySelector("#btn-stop-game"),
+    btnNewGame = document.querySelector("#btn-new-game"),
+    pointCounter = document.querySelectorAll("small"),
+    contentLetters = document.querySelectorAll(".content-letters");
 
   /* Funciones */
 
+  // función, que inicializa el set de cartas
+  const startDeck = (numPlayers = 2) => {
+    deck = createDeck();
+    pointPlayers = [];
+    for (let i = 0; i < numPlayers; i++) {
+      pointPlayers.push(0);
+      pointCounter[i].innerText = 0;
+      contentLetters[i].innerText = "";
+    }
+  };
+
   // función, set de cartas
   const createDeck = () => {
+    deck = [];
     for (let i = 2; i <= 10; i++) {
       for (let type of types) {
         // se agrega la informacion al array deck[]
         deck.push(i + type);
       }
     }
-
     for (let type of types) {
       for (let special of specials) {
         // se agrega la informacion al array deck[]
         deck.push(special + type);
       }
     }
-
     // _.shuffle() funcion de la libreria underscore.js, que organiza los elementos de un Array de forma aleatoria
-    deck = _.shuffle(deck);
-    return deck;
+    return _.shuffle(deck);
   };
 
   // función, pedir una carta
@@ -50,8 +61,7 @@
       // throw, manda un error en consola
       throw "No hay cartas en el deck";
     }
-    const currentLetter = deck.shift();
-    return currentLetter;
+    return deck.shift();
   };
 
   // funcion optener valor de la carta
@@ -62,28 +72,29 @@
   };
 
   // funcion crear carta en el DOM
-  const createLetter = (letter) => {
+  const createLetter = (letter, turn) => {
     // crea la carta dinamicamente en el DOM
     const letterImgTag = document.createElement("img");
     letterImgTag.src = `assets/${letter}.png`;
     letterImgTag.classList.add("letter");
-    return letterImgTag;
+    // crea la carta dinamicamente en el DOM
+    contentLetters[turn].append(letterImgTag);
+    // return letterImgTag;
   };
 
-  // funcion optener cartas CPU
-  const getLetterCPU = (getPointPlayer) => {
-    do {
-      const _getLetter = getLetter();
-      // asigna el valor de la carta en el DOM
-      pointCPU += valueLetter(_getLetter);
-      pointCounter[1].innerText = pointCPU;
-      // crea la carta dinamicamente en el DOM
-      contentLetter[1].append(createLetter(_getLetter));
-      if (getPointPlayer > 21) {
-        break;
-      }
-    } while (pointCPU < getPointPlayer && getPointPlayer <= 21);
+  // funcion crea el puntaje correspondiente al jugador
+  const createPoint = (letter, turn) => {
+    // optiene el puntaje de la carta, se solicita con getLetter();
+    pointPlayers[turn] += valueLetter(letter);
+    // asigna el valor de la carta en el DOM
+    pointCounter[turn].innerText = pointPlayers[turn];
+    return pointPlayers[turn];
+  };
 
+  // funcion determinar ganador
+  const isWinner = () => {
+    // destrucuración de Array
+    const [getPointPlayer, pointCPU] = pointPlayers;
     setTimeout(() => {
       if (pointCPU === getPointPlayer) {
         alert("There has been a tie!!");
@@ -94,7 +105,21 @@
       } else {
         alert("CPU is the winner!!");
       }
-    }, 10);
+    }, 150);
+  };
+
+  // funcion optener cartas CPU
+  const getLetterCPU = (getPointPlayer) => {
+    let pointCPU = 0;
+    do {
+      const _getLetter = getLetter(),
+        _pointPlayers = pointPlayers.length - 1;
+
+      pointCPU = createPoint(_getLetter, _pointPlayers);
+      createLetter(_getLetter, _pointPlayers);
+    } while (pointCPU < getPointPlayer && getPointPlayer <= 21);
+
+    isWinner();
   };
 
   // funcion que bloquea los botones -> perdir carta y detener
@@ -113,14 +138,6 @@
 
   const clearNewGame = () => {
     console.clear();
-    pointCPU = 0;
-    pointPlayer = 0;
-    // resetear el puntaje en el DOM
-    pointCounter[0].innerText = pointCPU;
-    pointCounter[1].innerText = pointPlayer;
-    // eliminar las cartas en el DOM
-    contentLetter[0].innerHTML = "";
-    contentLetter[1].innerHTML = "";
   };
 
   /* Eventos */
@@ -128,11 +145,8 @@
   // evento para el boton perdir carta
   btnGetLetter.addEventListener("click", () => {
     const _getLetter = getLetter();
-    // asigna el valor de la carta en el DOM
-    pointPlayer += valueLetter(_getLetter);
-    pointCounter[0].innerText = pointPlayer;
-    // crea la carta dinamicamente en el DOM
-    contentLetter[0].append(createLetter(_getLetter));
+    const pointPlayer = createPoint(_getLetter, 0);
+    createLetter(_getLetter, 0);
 
     // controlar los puntos optenidos
     if (pointPlayer > 21) {
@@ -151,17 +165,22 @@
 
   // evento para el boton detener
   btnStopGame.addEventListener("click", () => {
-    buttonsDisabled();
+    const [getPointPlayer, pointCPU] = pointPlayers;
     btnNewGame.disabled = false;
-    getLetterCPU(pointPlayer);
+    buttonsDisabled();
+    getLetterCPU(getPointPlayer);
   });
 
   // evento para el boton nuevo
   btnNewGame.addEventListener("click", () => {
-    deck = [];
-    createDeck();
-    buttonsEnable();
     clearNewGame();
+    buttonsEnable();
+    startDeck();
     btnNewGame.disabled = true;
   });
+
+  // se exporta a public la funcion inicializar juego
+  return {
+    newGame: startDeck,
+  };
 })();
